@@ -6,6 +6,10 @@ package test;
 import helper.IO;
 
 import java.io.IOException;
+import java.util.List;
+
+import domain.InGraphHelper;
+import domain.Pair_data;
 
 /**
  * @author harinder
@@ -22,7 +26,11 @@ public class TestMain {
 		
 		readPotentials();
 		
-		readTree();
+		String dataTreePath = "OCRdataset-2/data/data-tree.dat";
+		List<Pair_data> dataPairs = IO.readDataTree(dataTreePath);
+		
+		InGraphHelper.makeInGraph(dataPairs);
+		
 		//String[] imageID_arr = { "3", "3" };
 		//printProbabilities("aa", imageID_arr);
 
