@@ -15,8 +15,8 @@ public class InGraph {
 	public InGraphNode nodes_w1[];
 	public InGraphNode nodes_w2[];
 	
-	public InGraph(int len) {
-		nodes_w1 = new InGraphNode[len];
-		nodes_w2 = new InGraphNode[len];
+	public InGraph(int len1, int len2) {
+		nodes_w1 = new InGraphNode[len1];
+		nodes_w2 = new InGraphNode[len2];
 	}
 }

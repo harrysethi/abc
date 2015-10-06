@@ -8,7 +8,11 @@ import helper.IO;
 import java.io.IOException;
 import java.util.List;
 
+import constants.ModelType;
+import domain.CliqueTreeHelper;
+import domain.InGraph;
 import domain.InGraphHelper;
+import domain.InGraphNode;
 import domain.Pair_data;
 
 /**
@@ -16,6 +20,9 @@ import domain.Pair_data;
  *
  */
 
+
+//TODO: vaishali said ki can we use 'set' as adjancencies in inGraph to have search time as O(1)
+//TODO: if no pair-skip factors, graph disconnected
 public class TestMain {
 
 	/**
@@ -29,7 +36,8 @@ public class TestMain {
 		String dataTreePath = "OCRdataset-2/data/data-tree.dat";
 		List<Pair_data> dataPairs = IO.readDataTree(dataTreePath);
 		
-		InGraphHelper.makeInGraph(dataPairs);
+		List<InGraph> inGraphs = InGraphHelper.makeInGraph(dataPairs, ModelType.TRANSITION_MODEL);
+		InGraphNode minFillNode = CliqueTreeHelper.getMinFillEdge(inGraphs.get(0));
 		
 		//String[] imageID_arr = { "3", "3" };
 		//printProbabilities("aa", imageID_arr);

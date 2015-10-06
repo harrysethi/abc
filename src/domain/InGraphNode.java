@@ -19,6 +19,7 @@ public class InGraphNode {
 	public int nodeID;
 	public String imgID;
 	public List<InGraphNodeAdjacency> adjList;
+	public boolean isActive;
 	
 	public InGraphNode(int nodeID, String imgID, WordNumType wordNumType){
 		//InGraphNode.nodeCounter++;
@@ -27,6 +28,14 @@ public class InGraphNode {
 		this.imgID = imgID;
 		this.wordNumType = wordNumType;
 		this.adjList = new ArrayList<InGraphNodeAdjacency>();
+		isActive = true;
+	}
+	
+	public boolean isAdjacent(InGraphNode inGraphNode) {
+		for (InGraphNodeAdjacency inGraphNodeAdjacency : adjList) {
+			if(inGraphNodeAdjacency.inGraphNode.nodeID == inGraphNode.nodeID) return true;
+		}
+		return false;
 	}
 	
 	@Override

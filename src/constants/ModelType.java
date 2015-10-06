@@ -8,5 +8,5 @@ package constants;
  *
  */
 public enum ModelType {
-	OCR_MODEL, TRANSITION_MODEL, COMBINED_MODEL
+	OCR_MODEL, TRANSITION_MODEL, SKIP_MODEL, PAIR_SKIP_MODEL
 }
