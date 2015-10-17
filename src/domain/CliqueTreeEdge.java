@@ -35,7 +35,7 @@ public class CliqueTreeEdge implements Comparable<CliqueTreeEdge> {
 	
 	@Override
 	public String toString() {
-		return src + "=>" + dest + "|:" + edgeWeight;
+		return src + "=>" + dest + "|:" + edgeWeight + "-" + isPresent;
 	}
 
 	@Override

@@ -5,8 +5,10 @@ package domain;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import constants.ModelType;
@@ -49,7 +51,19 @@ public class CliqueTreeHelper {
 
 	private static void joinAllEdges_kruskals(CliqueTree cliqueTree) {
 		List<CliqueTreeEdge> cliqueTreeEdges = joinAllEdges(cliqueTree.nodes);
-		kruskals(cliqueTreeEdges, cliqueTree.nodes.size());
+		kruskals(cliqueTreeEdges, cliqueTree.nodes);
+		backEdgesArePresentAsWell(cliqueTree);
+	}
+
+	private static void backEdgesArePresentAsWell(CliqueTree cliqueTree) {
+		for(int i=0;i<cliqueTree.nodes.size();i++) {
+				CliqueTreeNode cliqueTreeNode = cliqueTree.nodes.get(i);
+				for (CliqueTreeEdge cliqueTreeEdge : cliqueTreeNode.adjList) {
+					if(!cliqueTreeEdge.isPresent) continue;
+					CliqueTreeEdge backEdge = cliqueTreeEdge.getDest().getCliqueTreeEdge(cliqueTreeNode);
+					backEdge.isPresent = true;
+				}
+		}
 	}
 
 	private static CliqueTree getCliqueTreeRemovingSubsets(
@@ -69,34 +83,34 @@ public class CliqueTreeHelper {
 	    int rank;
 	}
 	
-	private static int find(Subset subsets[], int i)
+	private static int find(Map<Integer, Subset> subsets, int i)
 	{
 	    // find root and make root as parent of i (path compression)
-	    if (subsets[i].parent != i)
-	        subsets[i].parent = find(subsets, subsets[i].parent);
+	    if (subsets.get(i).parent != i)
+	        subsets.get(i).parent = find(subsets, subsets.get(i).parent);
 	 
-	    return subsets[i].parent;
+	    return subsets.get(i).parent;
 	}
 	
-	private static void union(Subset subsets[], int x, int y)
+	private static void union(Map<Integer, Subset> subsets, int x, int y)
 	{
 	    int xroot = find(subsets, x);
 	    int yroot = find(subsets, y);
 	 
-	    if (subsets[xroot].rank < subsets[yroot].rank)
-	        subsets[xroot].parent = yroot;
-	    else if (subsets[xroot].rank > subsets[yroot].rank)
-	        subsets[yroot].parent = xroot;
+	    if (subsets.get(xroot).rank < subsets.get(yroot).rank)
+	        subsets.get(xroot).parent = yroot;
+	    else if (subsets.get(xroot).rank > subsets.get(yroot).rank)
+	        subsets.get(yroot).parent = xroot;
 	 
 	    else
 	    {
-	        subsets[yroot].parent = xroot;
-	        subsets[xroot].rank++;
+	        subsets.get(yroot).parent = xroot;
+	        subsets.get(xroot).rank++;
 	    }
 	}
 	
 	
-	private static void kruskals(List<CliqueTreeEdge> cliqueTreeEdges, int numOfNodes) {
+	private static void kruskals(List<CliqueTreeEdge> cliqueTreeEdges, List<CliqueTreeNode> cliqueTreeNodes) {
 		List<CliqueTreeEdge> spanningTreeEdges = new ArrayList<CliqueTreeEdge>();
 		
 		int maxEdgeWeight = getMaxEdgeWeight(cliqueTreeEdges);
@@ -104,18 +118,25 @@ public class CliqueTreeHelper {
 		
 		Collections.sort(cliqueTreeEdges);
 		
-		// Create V subsets with single elements
-		Subset subsets[] = new Subset[numOfNodes];
-	    for (int v = 0; v < numOfNodes; ++v)
+		Map<Integer, Subset> subsets = new HashMap<Integer, Subset>();
+	    /*for (int v = 0; v < numOfNodes; ++v)
 	    {
-	    	subsets[v] = new Subset();
+	    	CliqueTreeNode cliqueTreeNode = cliqueTreeNodes
+	    	subsets.put(arg0, arg1) = new Subset();
 	        subsets[v].parent = v;
 	        subsets[v].rank = 0;
-	    }
+	    }*/
+	    
+	    for (CliqueTreeNode cliqueTreeNode : cliqueTreeNodes) {
+	    	Subset subset = new Subset();
+			subsets.put(cliqueTreeNode.getNodeID(), subset);
+			subset.parent = cliqueTreeNode.getNodeID();
+			subset.rank = 0;
+		}
 		
 		int edgePtr = 0;
 		
-		while(spanningTreeEdges.size() < numOfNodes-1) {
+		while(spanningTreeEdges.size() < cliqueTreeNodes.size()-1) {
 			CliqueTreeEdge nextEdge = cliqueTreeEdges.get(edgePtr++);
 			
 			int x = find(subsets, nextEdge.getSrc().getNodeID());

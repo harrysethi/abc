@@ -37,10 +37,10 @@ public class TestMain {
 		String dataTreePath = "OCRdataset-2/data/data-tree.dat";
 		List<Pair_data> dataPairs = IO.readDataTree(dataTreePath);
 		
-		List<InGraph> inGraphs = InGraphHelper.makeInGraph(dataPairs, ModelType.PAIR_SKIP_MODEL);
+		List<InGraph> inGraphs = InGraphHelper.makeInGraph(dataPairs, ModelType.TRANSITION_MODEL);
 		//InGraphNode minFillNode = CliqueTreeHelper.getMinFillNode(inGraphs.get(0));
 		
-		CliqueTreeHelper.makeCliqueTree(inGraphs.get(0), ModelType.PAIR_SKIP_MODEL);
+		CliqueTreeHelper.makeCliqueTree(inGraphs.get(0), ModelType.TRANSITION_MODEL);
 		
 		System.out.println("..........here............");
 		

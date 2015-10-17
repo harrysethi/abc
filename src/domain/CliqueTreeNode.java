@@ -35,5 +35,14 @@ public class CliqueTreeNode {
 	public String toString(){
 		return this.belongingNodes.toString();
 	}
+	
+	public CliqueTreeEdge getCliqueTreeEdge(CliqueTreeNode cliqueTreeNode) {
+		for (CliqueTreeEdge cliqueTreeEdge : adjList) {
+			if(cliqueTreeEdge.getDest() == cliqueTreeNode)
+				return cliqueTreeEdge;
+		}
+		
+		return null;
+	}
 
 }
