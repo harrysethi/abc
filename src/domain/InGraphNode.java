@@ -40,6 +40,6 @@ public class InGraphNode {
 	
 	@Override
 	public String toString() {
-		return this.nodeID + ":" + this.imgID + "|" + this.wordNumType;
+		return this.nodeID + ":" + this.imgID + "|" + this.wordNumType + "|" + this.isActive;
 	}
 }
