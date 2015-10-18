@@ -32,13 +32,13 @@ public class TestMain {
 		
 		readPotentials();
 		
-		String dataTreePath = "OCRdataset-2/data/data-tree.dat";
+		String dataTreePath = "OCRdataset-2/data/data-loopsWS.dat";
 		List<Pair_data> dataPairs = IO.readDataTree(dataTreePath);
 		
 		List<InGraph> inGraphs = InGraphHelper.makeInGraph(dataPairs, ModelType.PAIR_SKIP_MODEL);
 		//InGraphNode minFillNode = CliqueTreeHelper.getMinFillNode(inGraphs.get(0));
 		
-		CliqueTreeHelper.makeCliqueTree(inGraphs.get(0), ModelType.PAIR_SKIP_MODEL);
+		CliqueTreeHelper.makeCliqueTree(inGraphs.get(1), ModelType.PAIR_SKIP_MODEL);
 		
 		System.out.println("..........here............");
 		

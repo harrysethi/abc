@@ -33,22 +33,15 @@ public class CliqueTreeHelper {
 	}
 	
 	private static void factorMultiplication(CliqueTree cliqueTree) {
-		//TODO: needs to be implemented
 		for(CliqueTreeNode cliqueTreeNode : cliqueTree.nodes) {
-			//int numOfBelongingNodes = cliqueTreeNode.belongingNodes.size();
-			//cliqueTreeNode.factorProduct = new String[][];
 			
 			//add titles
 			for(InGraphNode inGraphNode : cliqueTreeNode.belongingNodes) {
 				List<Object> belongingNodeList = new ArrayList<Object>();
-				//cliqueTreeNode.factorProduct.add(belongingNodeList);
-				//belongingNodeList.add(inGraphNode);
 				cliqueTreeNode.factorProduct.put(inGraphNode, belongingNodeList);
 			}
 			
 			List<Object> valueList = new ArrayList<Object>();
-			//cliqueTreeNode.factorProduct.add(valueList);
-			//valueList.add("Value");
 			cliqueTreeNode.factorProduct.put("Value", valueList);
 
 			
@@ -119,24 +112,8 @@ public class CliqueTreeHelper {
 
 	private static List<Object> searchSpecificFactorList(CliqueTreeNode cliqueTreeNode,
 			InGraphNode inGraphNode) {
-		/*for(List<Object> factorList : cliqueTreeNode.factorProduct) {
-			if((InGraphNode)factorList.get(0)==inGraphNode){
-				return factorList;
-			}
-		}
-		
-		return null;*/
 		return cliqueTreeNode.factorProduct.get(inGraphNode);
 	}
-	
-	/*private static void addCharacters(CliqueTreeNode cliqueTreeNode, List<InGraphNode> belongingNodes, int index) {
-		if(index == belongingNodes.size()) return;
-		
-		for(int i=0; i<10; i++) {
-			cliqueTreeNode.factorProduct.get(belongingNodes.get(index)).add(Consts.characters[i]);
-			addCharacters(cliqueTreeNode, belongingNodes, index+1);
-		}
-	}*/
 	
 	private static void addCharacters(CliqueTreeNode cliqueTreeNode, List<InGraphNode> belongingNodes, int l_index, int r_index) {
 		if(l_index == belongingNodes.size()) {
@@ -282,7 +259,6 @@ public class CliqueTreeHelper {
 			for (InGraphNode inGraphNode : belongingNodes) {
 				if(ocrFactorsAssigned.contains(inGraphNode.getKey())) continue;
 				
-				//inGraphNode.isOCRfactorAssigned = true;
 				ocrFactorsAssigned.add(inGraphNode.getKey());
 				
 				Factor ocrFactor = new Factor();
@@ -394,13 +370,6 @@ public class CliqueTreeHelper {
 		Collections.sort(cliqueTreeEdges);
 		
 		Map<Integer, Subset> subsets = new HashMap<Integer, Subset>();
-	    /*for (int v = 0; v < numOfNodes; ++v)
-	    {
-	    	CliqueTreeNode cliqueTreeNode = cliqueTreeNodes
-	    	subsets.put(arg0, arg1) = new Subset();
-	        subsets[v].parent = v;
-	        subsets[v].rank = 0;
-	    }*/
 	    
 	    for (CliqueTreeNode cliqueTreeNode : cliqueTreeNodes) {
 	    	Subset subset = new Subset();
@@ -449,7 +418,6 @@ public class CliqueTreeHelper {
 				
 		for (int i = 0; i < cliqueTreeNodes.size(); i++) {
 			for (int j = i + 1; j < cliqueTreeNodes.size(); j++) {
-				//if(i==j) continue;
 				
 				CliqueTreeNode cliqueTreeNode1 = cliqueTreeNodes.get(i);
 				CliqueTreeNode cliqueTreeNode2 = cliqueTreeNodes.get(j);

@@ -13,8 +13,6 @@ import constants.WordNumType;
  *
  */
 public class InGraphNode {
-	//private static int nodeCounter;
-	
 	public WordNumType wordNumType;
 	public int nodeID;
 	public String imgID;
@@ -23,11 +21,8 @@ public class InGraphNode {
 	
 	private String key;
 	
-	//public boolean isOCRfactorAssigned;
 	
 	public InGraphNode(int nodeID, String imgID, WordNumType wordNumType){
-		//InGraphNode.nodeCounter++;
-		//this.nodeId = InGraphNode.nodeCounter;
 		this.nodeID = nodeID;
 		this.imgID = imgID; 
 		this.wordNumType = wordNumType;
@@ -35,8 +30,6 @@ public class InGraphNode {
 		this.isActive = true;
 		
 		this.key = this.nodeID + "<=>" + this.wordNumType;
-		
-		//this.isOCRfactorAssigned = false;
 	}
 	
 	public String getKey() {

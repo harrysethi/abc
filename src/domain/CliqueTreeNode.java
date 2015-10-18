@@ -9,7 +9,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Vector;
 
 /**
  * @author harinder
@@ -24,9 +23,6 @@ public class CliqueTreeNode {
 	
 	public List<Factor> factors;
 	
-	//public Vector<Vector<String>> factorProduct;
-	//public String [][]factorProduct;
-	//public List<List<Object>> factorProduct;
 	public Map<Object, List<Object>> factorProduct;
 
 	public CliqueTreeNode() {
