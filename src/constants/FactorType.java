@@ -8,5 +8,5 @@ package constants;
  *
  */
 public enum FactorType {
-	TRANSITION, SKIP, PAIR_SKIP
+	OCR, TRANSITION, SKIP, PAIR_SKIP
 }

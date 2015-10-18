@@ -9,7 +9,6 @@ package constants;
  */
 public class Consts {
 	
-	public static final char[] characters = { 'e', 't', 'a', 'o', 'i', 'n', 's', 'h',
-			'r', 'd' };
+	public static final char[] characters = { 'd', 'o', 'i', 'r', 'a', 'h', 't', 'n', 's', 'e' };
 	
 }

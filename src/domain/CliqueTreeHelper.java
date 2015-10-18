@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import constants.Consts;
+import constants.FactorType;
 import constants.ModelType;
 import constants.WordNumType;
 
@@ -20,6 +22,279 @@ import constants.WordNumType;
  */
 public class CliqueTreeHelper {
 	public static List<CliqueTree> makeCliqueTree(InGraph inGraph, ModelType modelType) {
+		List<CliqueTree> cliqueTrees = makeCliqueTree_withoutFactors(inGraph, modelType);
+		
+		for (CliqueTree cliqueTree : cliqueTrees) {
+			assignFactors(cliqueTree, modelType);
+			factorMultiplication(cliqueTree);
+		}
+		
+		return cliqueTrees;
+	}
+	
+	private static void factorMultiplication(CliqueTree cliqueTree) {
+		//TODO: needs to be implemented
+		for(CliqueTreeNode cliqueTreeNode : cliqueTree.nodes) {
+			//int numOfBelongingNodes = cliqueTreeNode.belongingNodes.size();
+			//cliqueTreeNode.factorProduct = new String[][];
+			
+			//add titles
+			for(InGraphNode inGraphNode : cliqueTreeNode.belongingNodes) {
+				List<Object> belongingNodeList = new ArrayList<Object>();
+				//cliqueTreeNode.factorProduct.add(belongingNodeList);
+				//belongingNodeList.add(inGraphNode);
+				cliqueTreeNode.factorProduct.put(inGraphNode, belongingNodeList);
+			}
+			
+			List<Object> valueList = new ArrayList<Object>();
+			//cliqueTreeNode.factorProduct.add(valueList);
+			//valueList.add("Value");
+			cliqueTreeNode.factorProduct.put("Value", valueList);
+
+			
+			//add characters
+			List<InGraphNode> belongingNodes = new ArrayList<InGraphNode>(cliqueTreeNode.belongingNodes);
+			addCharacters(cliqueTreeNode, belongingNodes, 0, belongingNodes.size()-1);
+
+			for(Factor factor : cliqueTreeNode.factors) {
+				List<Object> factorList_specific2Node_1 = searchSpecificFactorList(cliqueTreeNode, factor.inGraphNode1);
+				List<Object> factorList_specific2Node_2 = searchSpecificFactorList(cliqueTreeNode, factor.inGraphNode2);
+				
+				switch (factor.factorType) {
+				case OCR:
+					for(int i=0; i<factorList_specific2Node_1.size(); i++) {
+						char currChar_ocr = (char)factorList_specific2Node_1.get(i);
+						Double prob_ocr = Potentials.getOcrFactor(factor.inGraphNode1.imgID, currChar_ocr);
+						
+						double currProb_ocr = (double)valueList.get(i);
+						valueList.set(i, currProb_ocr*prob_ocr);
+					}
+					
+					break;
+					
+				case TRANSITION:
+					for(int i=0; i<factorList_specific2Node_1.size(); i++) {
+						char currChar_transition_1 = (char)factorList_specific2Node_1.get(i);
+						char currChar_transition_2 = (char)factorList_specific2Node_2.get(i);
+						
+						Double prob_transition = Potentials.getTransFactor(currChar_transition_1, currChar_transition_2);
+						
+						double currProb_transition = (double)valueList.get(i);
+						valueList.set(i, currProb_transition*prob_transition);
+					}
+					
+					break;
+					
+				case SKIP:
+					for(int i=0; i<factorList_specific2Node_1.size(); i++) {
+						char currChar_transition_1 = (char)factorList_specific2Node_1.get(i);
+						char currChar_transition_2 = (char)factorList_specific2Node_2.get(i);
+						
+						Double prob_skip = Potentials.getSkipFactor(currChar_transition_1, currChar_transition_2);
+						
+						double currProb_skip = (double)valueList.get(i);
+						valueList.set(i, currProb_skip*prob_skip);
+					}
+					
+					break;
+
+				case PAIR_SKIP:
+					for(int i=0; i<factorList_specific2Node_1.size(); i++) {
+						char currChar_transition_1 = (char)factorList_specific2Node_1.get(i);
+						char currChar_transition_2 = (char)factorList_specific2Node_2.get(i);
+						
+						Double prob_pairSkip = Potentials.getPairSkipFactor(currChar_transition_1, currChar_transition_2);
+						
+						double currProb_pairSkip = (double)valueList.get(i);
+						valueList.set(i, currProb_pairSkip*prob_pairSkip);
+					}
+					
+					break;
+				}
+			}
+			
+			System.out.println();
+		}
+	}
+
+	private static List<Object> searchSpecificFactorList(CliqueTreeNode cliqueTreeNode,
+			InGraphNode inGraphNode) {
+		/*for(List<Object> factorList : cliqueTreeNode.factorProduct) {
+			if((InGraphNode)factorList.get(0)==inGraphNode){
+				return factorList;
+			}
+		}
+		
+		return null;*/
+		return cliqueTreeNode.factorProduct.get(inGraphNode);
+	}
+	
+	/*private static void addCharacters(CliqueTreeNode cliqueTreeNode, List<InGraphNode> belongingNodes, int index) {
+		if(index == belongingNodes.size()) return;
+		
+		for(int i=0; i<10; i++) {
+			cliqueTreeNode.factorProduct.get(belongingNodes.get(index)).add(Consts.characters[i]);
+			addCharacters(cliqueTreeNode, belongingNodes, index+1);
+		}
+	}*/
+	
+	private static void addCharacters(CliqueTreeNode cliqueTreeNode, List<InGraphNode> belongingNodes, int l_index, int r_index) {
+		if(l_index == belongingNodes.size()) {
+			for(int i=0;i<Math.pow(10, l_index);i++)
+				cliqueTreeNode.factorProduct.get("Value").add(1.0);
+			return;
+		}
+		
+		for(int k=0;k<Math.pow(10, l_index);k++) {
+			for(int i=0;i<10;i++) {
+				for(int j=0;j<Math.pow(10, r_index);j++) { 
+					cliqueTreeNode.factorProduct.get(belongingNodes.get(l_index)).add(Consts.characters[i]);
+				}
+			}
+		}
+		addCharacters(cliqueTreeNode, belongingNodes, ++l_index, --r_index);
+	}
+	
+	private static void assignFactors(CliqueTree cliqueTree, ModelType modelType) {
+		switch (modelType) {
+		case PAIR_SKIP_MODEL:
+			assignPairSkipFactors(cliqueTree);
+			//intentionally missing 'break'
+			
+		case SKIP_MODEL:
+			assignSkipFactors(cliqueTree);
+			//intentionally missing 'break'
+			
+		case TRANSITION_MODEL:
+			assignTransitionFactors(cliqueTree);
+			//intentionally missing 'break'
+			
+		case OCR_MODEL:
+			assignOCRfactors(cliqueTree);
+			break;
+		}
+	}
+
+	private static void assignPairSkipFactors(CliqueTree cliqueTree) {
+		Set<String> pairSkipFactorsAssigned = new HashSet<String>();
+		
+		for (CliqueTreeNode cliqueTreeNode : cliqueTree.nodes) {
+			List<InGraphNode> belongingNodes = new ArrayList<InGraphNode>(cliqueTreeNode.belongingNodes);
+			
+			for(int i=0; i<belongingNodes.size(); i++) {
+				for(int j=i+1; j<belongingNodes.size(); j++) {
+					InGraphNode belongingNode1 = belongingNodes.get(i);
+					InGraphNode belongingNode2 = belongingNodes.get(j);
+					
+					if(!belongingNode1.imgID.equals(belongingNode2.imgID)) continue;
+					if(belongingNode1.wordNumType == belongingNode2.wordNumType) continue;
+					
+					//there exists a transition factor
+					String key1 = getKey(belongingNode1, belongingNode2);
+					String key2 = getKey(belongingNode2, belongingNode1);
+					if(pairSkipFactorsAssigned.contains(key1) || pairSkipFactorsAssigned.contains(key2)) continue;
+					
+					pairSkipFactorsAssigned.add(key1);
+					Factor factor = new Factor();
+					cliqueTreeNode.factors.add(factor);
+					factor.factorType = FactorType.PAIR_SKIP;
+					factor.inGraphNode1 = belongingNode1;
+					factor.inGraphNode2 = belongingNode2;
+					
+				}
+			}
+		}
+	}
+
+	private static void assignSkipFactors(CliqueTree cliqueTree) {
+		Set<String> skipFactorsAssigned = new HashSet<String>();
+		
+		for (CliqueTreeNode cliqueTreeNode : cliqueTree.nodes) {
+			List<InGraphNode> belongingNodes = new ArrayList<InGraphNode>(cliqueTreeNode.belongingNodes);
+			
+			for(int i=0; i<belongingNodes.size(); i++) {
+				for(int j=i+1; j<belongingNodes.size(); j++) {
+					InGraphNode belongingNode1 = belongingNodes.get(i);
+					InGraphNode belongingNode2 = belongingNodes.get(j);
+					
+					if(!belongingNode1.imgID.equals(belongingNode2.imgID)) continue;
+					if(belongingNode1.wordNumType != belongingNode2.wordNumType) continue;
+					
+					//there exists a transition factor
+					String key1 = getKey(belongingNode1, belongingNode2);
+					String key2 = getKey(belongingNode2, belongingNode1);
+					if(skipFactorsAssigned.contains(key1) || skipFactorsAssigned.contains(key2)) continue;
+					
+					skipFactorsAssigned.add(key1);
+					Factor factor = new Factor();
+					cliqueTreeNode.factors.add(factor);
+					factor.factorType = FactorType.SKIP;
+					factor.inGraphNode1 = belongingNode1;
+					factor.inGraphNode2 = belongingNode2;
+					
+				}
+			}
+		}
+	}
+
+	private static void assignTransitionFactors(CliqueTree cliqueTree) {
+		Set<String> transitionFactorsAssigned = new HashSet<String>();
+		
+		for (CliqueTreeNode cliqueTreeNode : cliqueTree.nodes) {
+			List<InGraphNode> belongingNodes = new ArrayList<InGraphNode>(cliqueTreeNode.belongingNodes);
+			
+			for(int i=0; i<belongingNodes.size(); i++) {
+				for(int j=i+1; j<belongingNodes.size(); j++) {
+					InGraphNode belongingNode1 = belongingNodes.get(i);
+					InGraphNode belongingNode2 = belongingNodes.get(j);
+					
+					if(Math.abs(belongingNode1.nodeID-belongingNode2.nodeID) != 1) continue;
+					if(belongingNode1.wordNumType != belongingNode2.wordNumType) continue;
+					//transition factors exist only between nodes of a same word
+					
+					//there exists a transition factor
+					String key1 = getKey(belongingNode1, belongingNode2);
+					String key2 = getKey(belongingNode2, belongingNode1);
+					if(transitionFactorsAssigned.contains(key1) || transitionFactorsAssigned.contains(key2)) continue;
+					
+					transitionFactorsAssigned.add(key1);
+					Factor factor = new Factor();
+					cliqueTreeNode.factors.add(factor);
+					factor.factorType = FactorType.TRANSITION;
+					factor.inGraphNode1 = belongingNode1;
+					factor.inGraphNode2 = belongingNode2;
+					
+				}
+			}
+		}
+	}
+
+	private static String getKey(InGraphNode belongingNode1,
+			InGraphNode belongingNode2) {
+		return belongingNode1.getKey() + ":" + belongingNode2.getKey();
+	}
+
+	private static void assignOCRfactors(CliqueTree cliqueTree) {
+		Set<String> ocrFactorsAssigned = new HashSet<String>();
+		
+		for (CliqueTreeNode cliqueTreeNode : cliqueTree.nodes) {
+			Set<InGraphNode> belongingNodes = cliqueTreeNode.belongingNodes;
+			for (InGraphNode inGraphNode : belongingNodes) {
+				if(ocrFactorsAssigned.contains(inGraphNode.getKey())) continue;
+				
+				//inGraphNode.isOCRfactorAssigned = true;
+				ocrFactorsAssigned.add(inGraphNode.getKey());
+				
+				Factor ocrFactor = new Factor();
+				cliqueTreeNode.factors.add(ocrFactor);
+				ocrFactor.factorType = FactorType.OCR;
+				ocrFactor.inGraphNode1 = inGraphNode;
+			}
+		}
+	}
+
+	private static List<CliqueTree> makeCliqueTree_withoutFactors(
+			InGraph inGraph, ModelType modelType) {
 		List<CliqueTree> cliqueTrees = new ArrayList<CliqueTree>();
 		
 		

@@ -4,9 +4,12 @@
 package domain;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.Vector;
 
 /**
  * @author harinder
@@ -18,6 +21,13 @@ public class CliqueTreeNode {
 	private int nodeID;
 	public Set<InGraphNode> belongingNodes;
 	public List<CliqueTreeEdge> adjList;
+	
+	public List<Factor> factors;
+	
+	//public Vector<Vector<String>> factorProduct;
+	//public String [][]factorProduct;
+	//public List<List<Object>> factorProduct;
+	public Map<Object, List<Object>> factorProduct;
 
 	public CliqueTreeNode() {
 		this.nodeID = CliqueTreeNode.nodeCounter;
@@ -25,6 +35,9 @@ public class CliqueTreeNode {
 		
 		this.belongingNodes = new HashSet<InGraphNode>();
 		this.adjList = new ArrayList<CliqueTreeEdge>();
+		this.factors = new ArrayList<Factor>();
+		
+		this.factorProduct = new HashMap<Object, List<Object>>();
 	}
 
 	public int getNodeID() {

@@ -21,14 +21,26 @@ public class InGraphNode {
 	public List<InGraphNodeAdjacency> adjList;
 	public boolean isActive;
 	
+	private String key;
+	
+	//public boolean isOCRfactorAssigned;
+	
 	public InGraphNode(int nodeID, String imgID, WordNumType wordNumType){
 		//InGraphNode.nodeCounter++;
 		//this.nodeId = InGraphNode.nodeCounter;
 		this.nodeID = nodeID;
-		this.imgID = imgID;
+		this.imgID = imgID; 
 		this.wordNumType = wordNumType;
 		this.adjList = new ArrayList<InGraphNodeAdjacency>();
-		isActive = true;
+		this.isActive = true;
+		
+		this.key = this.nodeID + "<=>" + this.wordNumType;
+		
+		//this.isOCRfactorAssigned = false;
+	}
+	
+	public String getKey() {
+		return this.key;
 	}
 	
 	public boolean isAdjacent(InGraphNode inGraphNode) {

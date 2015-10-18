@@ -6,6 +6,8 @@ package domain;
 import java.util.HashMap;
 import java.util.Map;
 
+import constants.WordNumType;
+
 /**
  * @author harinder
  *
@@ -40,6 +42,12 @@ public class Potentials {
 	}
 
 	public static Double getSkipFactor(char char1, char char2) {
+		if (char1 == char2)
+			return 5.0;
+		return 1.0;
+	}
+	
+	public static Double getPairSkipFactor(char char1, char char2) {
 		if (char1 == char2)
 			return 5.0;
 		return 1.0;
