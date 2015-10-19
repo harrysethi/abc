@@ -25,18 +25,71 @@ import constants.WordNumType;
  */
 public class CliqueTreeHelper {
 	
-	public static List<CliqueTree> makeCliqueTree(InGraph inGraph, ModelType modelType) {
-		List<CliqueTree> cliqueTrees = makeCliqueTree_withoutFactors(inGraph, modelType);
+	public static Map<InGraphNode, Map<Object, List<Object>>> cliqueTree_msgPassing_calcBelief(InGraph inGraph, ModelType modelType) {
+		List<CliqueTree> cliqueTrees = makeCliqueTree(inGraph, modelType);
+		messagePassing(inGraph, modelType, cliqueTrees);
+		return calculateBelief(inGraph, cliqueTrees, modelType);
+	}
+	
+	private static Map<InGraphNode, Map<Object, List<Object>>> calculateBelief(InGraph inGraph, List<CliqueTree> cliqueTrees, ModelType modelType) {
+		Map<InGraphNode, Map<Object, List<Object>>> beliefMap = new HashMap<InGraphNode, Map<Object, List<Object>>>();
+		
+		CliqueTree cliqueTree1 = cliqueTrees.get(0);
+		CliqueTree cliqueTree2 = cliqueTrees.get(0);
+		
+		if(modelType == ModelType.TRANSITION_MODEL || modelType == ModelType.SKIP_MODEL)
+			cliqueTree2 = cliqueTrees.get(0);
+		
+		for(InGraphNode inGraphNode : inGraph.nodes_w1) {
+			calculateBeliefHelper(beliefMap, cliqueTree1, inGraphNode);
+		}
+		
+		for(InGraphNode inGraphNode : inGraph.nodes_w2) {
+			calculateBeliefHelper(beliefMap, cliqueTree2, inGraphNode);
+		}
+		
+		return beliefMap;
+	}
+
+	private static void calculateBeliefHelper(Map<InGraphNode, Map<Object, List<Object>>> beliefMap,
+			CliqueTree cliqueTree, InGraphNode inGraphNode) {
+		
+		for(CliqueTreeNode cliqueTreeNode : cliqueTree.nodes) {
+			if(!cliqueTreeNode.belongingNodes.contains(inGraphNode)) continue;
+			
+			Set<InGraphNode> nodesAfterSummingOut = new HashSet<InGraphNode>();
+			nodesAfterSummingOut.add(inGraphNode);
+			Map<Object, List<Object>> factorProduct_summedOut = new HashMap<Object, List<Object>>();
+			createFactorProduct(factorProduct_summedOut, nodesAfterSummingOut, 0.0);
+			
+			List<Object> valueList_node = cliqueTreeNode.factorProduct.get("Value");
+			List<Object> valueList_summedOut = factorProduct_summedOut.get("Value");
+			
+			operateTwoFactors(cliqueTreeNode, nodesAfterSummingOut, factorProduct_summedOut, valueList_summedOut,
+					valueList_node, valueList_summedOut, OperateType.OPERATE_SUM);
+			
+			beliefMap.put(inGraphNode, factorProduct_summedOut); 
+			break;
+		}
+	}
+	
+	private static void messagePassing(InGraph inGraph, ModelType modelType, List<CliqueTree> cliqueTrees) {
 		
 		for (CliqueTree cliqueTree : cliqueTrees) {
-			assignFactors(cliqueTree, modelType);
-			factorMultiplication(cliqueTree);
-			
 			//no need of message passing in OCR_MODEL
 			if(modelType == ModelType.OCR_MODEL) continue; 
 			
 			CliqueTreeNode root = upwardMessagePassing(cliqueTree);
 			downwardMessagePassing(root);
+		}
+	}
+	
+	private static List<CliqueTree> makeCliqueTree(InGraph inGraph, ModelType modelType) {
+		List<CliqueTree> cliqueTrees = makeCliqueTree_withoutFactors(inGraph, modelType);
+		
+		for (CliqueTree cliqueTree : cliqueTrees) {
+			assignFactors(cliqueTree, modelType);
+			factorMultiplication(cliqueTree);
 		}
 		
 		return cliqueTrees;
@@ -63,7 +116,7 @@ public class CliqueTreeHelper {
 				operateTwoFactors(adjacent, upMsg.nodes, upMsg.factorProduct, valueList_upMsg,
 						valueList_adjacent_temp, valueList_adjacent_temp, OperateType.OPERATE_DIVIDE);
 				
-				//sumOut & set in the edge
+				//sumOut
 				InGraphNode nodeToSumOut = getNodeToSumOut(cliqueTreeNode, adjacent);
 				
 				Set<InGraphNode> nodesAfterSummingOut = new HashSet<InGraphNode>(cliqueTreeNode.belongingNodes);
@@ -78,12 +131,12 @@ public class CliqueTreeHelper {
 				operateTwoFactors(adjacent, nodesAfterSummingOut, factorProduct_summedOut, valueList_summedOut,
 						valueList_adjacent_temp, valueList_summedOut, OperateType.OPERATE_SUM);
 
-				CliqueTreeEdge backEdge = adjacent.getCliqueTreeEdge(cliqueTreeNode);
-				backEdge.downwardMessage = new Message(factorProduct_summedOut, nodesAfterSummingOut);
-				
 				//multiply to adjacent
 				operateTwoFactors(adjacent, nodesAfterSummingOut, factorProduct_summedOut, valueList_summedOut,
 						valueList_adjacent, valueList_adjacent, OperateType.OPERATE_MULTIPLY);
+				
+				CliqueTreeEdge backEdge = adjacent.getCliqueTreeEdge(cliqueTreeNode);
+				backEdge.downwardMessage = new Message(factorProduct_summedOut, nodesAfterSummingOut);
 				
 				myQ.add(adjacent);
 			}
