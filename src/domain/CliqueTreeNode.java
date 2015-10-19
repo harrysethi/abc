@@ -15,8 +15,10 @@ import java.util.Set;
  *
  */
 public class CliqueTreeNode {
+	
 	private static int nodeCounter;
 
+	public boolean isRoot;
 	private int nodeID;
 	public Set<InGraphNode> belongingNodes;
 	public List<CliqueTreeEdge> adjList;
@@ -52,6 +54,16 @@ public class CliqueTreeNode {
 		}
 		
 		return null;
+	}
+	
+	public int getAdjacencyCount() {
+		int count = 0;
+		
+		for(CliqueTreeEdge cliqueTreeEdge : this.adjList) {
+			if(cliqueTreeEdge.isPresent && !cliqueTreeEdge.isBroken) count++;
+		}
+		
+		return count;
 	}
 
 }

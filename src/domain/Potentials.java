@@ -6,8 +6,6 @@ package domain;
 import java.util.HashMap;
 import java.util.Map;
 
-import constants.WordNumType;
-
 /**
  * @author harinder
  *

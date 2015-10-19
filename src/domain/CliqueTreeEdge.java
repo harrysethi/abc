@@ -13,12 +13,17 @@ public class CliqueTreeEdge implements Comparable<CliqueTreeEdge> {
 	private int edgeWeight;
 	public int edgeWeight_maxMinus;
 	public boolean isPresent;
-
+	public boolean isBroken;
+	
+	public Message upwardMessage;
+	public Message downwardMessage;
+	
 	public CliqueTreeEdge(CliqueTreeNode src, CliqueTreeNode dest, int edgeWeight) {
 		this.src = src;
 		this.dest = dest;
 		this.edgeWeight = edgeWeight;
 		isPresent = false;
+		isBroken = false;
 	}
 
 	public CliqueTreeNode getDest() {
