@@ -1,7 +1,7 @@
 /**
  * 
  */
-package domain;
+package worker;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,6 +18,15 @@ import constants.FactorType;
 import constants.ModelType;
 import constants.OperateType;
 import constants.WordNumType;
+import domain.CliqueTree;
+import domain.CliqueTreeEdge;
+import domain.CliqueTreeNode;
+import domain.Factor;
+import domain.InGraph;
+import domain.InGraphNode;
+import domain.InGraphNodeAdjacency;
+import domain.Message;
+import domain.Potentials;
 
 /**
  * @author harinder
@@ -25,8 +34,19 @@ import constants.WordNumType;
  */
 public class CliqueTreeHelper {
 	
-	public static Map<InGraphNode, Map<Object, List<Object>>> cliqueTree_msgPassing_calcBelief(InGraph inGraph, ModelType modelType) {
-		List<CliqueTree> cliqueTrees = makeCliqueTree(inGraph, modelType);
+	public static Map<InGraph, List<CliqueTree>> makeCliqueTrees(List<InGraph> inGraphs, ModelType modelType) {
+		Map<InGraph, List<CliqueTree>> cliqueTreesMap = new HashMap<InGraph, List<CliqueTree>>();
+		
+		for (InGraph inGraph : inGraphs) {
+			List<CliqueTree> cliqueTrees = makeCliqueTree(inGraph, modelType);
+			cliqueTreesMap.put(inGraph, cliqueTrees);
+		}
+		
+		return cliqueTreesMap;
+	}
+	
+	public static Map<InGraphNode, Map<Object, List<Object>>> msgPassing_calcBelief(InGraph inGraph,
+			ModelType modelType, List<CliqueTree> cliqueTrees) {
 		messagePassing(inGraph, modelType, cliqueTrees);
 		return calculateBelief(inGraph, cliqueTrees, modelType);
 	}
@@ -38,7 +58,7 @@ public class CliqueTreeHelper {
 		CliqueTree cliqueTree2 = cliqueTrees.get(0);
 		
 		if(modelType == ModelType.TRANSITION_MODEL || modelType == ModelType.SKIP_MODEL)
-			cliqueTree2 = cliqueTrees.get(0);
+			cliqueTree2 = cliqueTrees.get(1);
 		
 		for(InGraphNode inGraphNode : inGraph.nodes_w1) {
 			calculateBeliefHelper(beliefMap, cliqueTree1, inGraphNode);
@@ -68,7 +88,7 @@ public class CliqueTreeHelper {
 			operateTwoFactors(cliqueTreeNode, nodesAfterSummingOut, factorProduct_summedOut, valueList_summedOut,
 					valueList_node, valueList_summedOut, OperateType.OPERATE_SUM);
 			
-			beliefMap.put(inGraphNode, factorProduct_summedOut); 
+			beliefMap.put(inGraphNode, factorProduct_summedOut);
 			break;
 		}
 	}
@@ -77,7 +97,7 @@ public class CliqueTreeHelper {
 		
 		for (CliqueTree cliqueTree : cliqueTrees) {
 			//no need of message passing in OCR_MODEL
-			if(modelType == ModelType.OCR_MODEL) continue; 
+			if(modelType == ModelType.OCR_MODEL || cliqueTree.nodes.size()==1) continue; 
 			
 			CliqueTreeNode root = upwardMessagePassing(cliqueTree);
 			downwardMessagePassing(root);
@@ -111,11 +131,11 @@ public class CliqueTreeHelper {
 				
 				Map<Object, List<Object>> factorProduct_node_temp = new HashMap<Object, List<Object>>(cliqueTreeNode.factorProduct);
 				List<Object> valueList_upMsg = upMsg.factorProduct.get("Value");
-				List<Object> valueList_adjacent_temp = factorProduct_node_temp.get("Value");
+				List<Object> valueList_node_temp = factorProduct_node_temp.get("Value");
 				
 				//Divide the factorProduct by nodes upward message
-				operateTwoFactors(adjacent, upMsg.nodes, upMsg.factorProduct, valueList_upMsg,
-						valueList_adjacent_temp, valueList_adjacent_temp, OperateType.OPERATE_DIVIDE);
+				operateTwoFactors(cliqueTreeNode, upMsg.nodes, upMsg.factorProduct, valueList_upMsg,
+						valueList_node_temp, valueList_node_temp, OperateType.OPERATE_DIVIDE);
 				
 				//sumOut
 				InGraphNode nodeToSumOut = getNodeToSumOut(cliqueTreeNode, adjacent);
@@ -129,8 +149,8 @@ public class CliqueTreeHelper {
 				List<Object> valueList_adjacent = adjacent.factorProduct.get("Value");
 
 				//populate factorTable of nodesAfterSummingOut
-				operateTwoFactors(adjacent, nodesAfterSummingOut, factorProduct_summedOut, valueList_summedOut,
-						valueList_adjacent_temp, valueList_summedOut, OperateType.OPERATE_SUM);
+				operateTwoFactors(cliqueTreeNode, nodesAfterSummingOut, factorProduct_summedOut, valueList_summedOut,
+						valueList_node_temp, valueList_summedOut, OperateType.OPERATE_SUM);
 
 				//multiply to adjacent
 				operateTwoFactors(adjacent, nodesAfterSummingOut, factorProduct_summedOut, valueList_summedOut,
@@ -213,24 +233,23 @@ public class CliqueTreeHelper {
 
 	private static void operateTwoFactorsHelper(List<Object> valueList1, List<Object> valueList2, List<Object> valueList_to, 
 			OperateType opType, int i, Map<InGraphNode, Character> key1, int j, Map<InGraphNode, Character> key2) {
-		
-		if(key1.equals(key2)) {
-			double prob1 = (double)valueList1.get(i);
-			double prob2 = (double)valueList2.get(j);
+
+		if (!key1.equals(key2)) return;
 			
-			switch (opType) {
-			case OPERATE_SUM:
-				valueList_to.set(i, prob2+prob1);
-				break;
-			case OPERATE_MULTIPLY:
-				valueList_to.set(i, prob2*prob1);
-				break;
-			case OPERATE_DIVIDE:
-				valueList_to.set(i, prob2/prob1);
-				break;
-			}
+		double prob1 = (double) valueList1.get(i);
+		double prob2 = (double) valueList2.get(j);
+
+		switch (opType) {
+		case OPERATE_SUM:
+			valueList_to.set(i, prob2 + prob1);
+			break;
+		case OPERATE_MULTIPLY:
+			valueList_to.set(i, prob2 * prob1);
+			break;
+		case OPERATE_DIVIDE:
+			valueList_to.set(i, prob2 / prob1);
+			break;
 		}
-		
 	}
 
 	private static Map<InGraphNode, Character> getFactorRowKey(Set<InGraphNode> nodes, 
@@ -309,7 +328,6 @@ public class CliqueTreeHelper {
 				}
 			}
 			
-			System.out.println();
 		}
 	}
 
@@ -529,6 +547,8 @@ public class CliqueTreeHelper {
 
 	private static void joinAllEdges_kruskals(CliqueTree cliqueTree) {
 		List<CliqueTreeEdge> cliqueTreeEdges = joinAllEdges(cliqueTree.nodes);
+		if(cliqueTreeEdges.size()==0) return;
+		
 		kruskals(cliqueTreeEdges, cliqueTree.nodes);
 		backEdgesArePresentAsWell(cliqueTree);
 	}
@@ -666,10 +686,10 @@ public class CliqueTreeHelper {
 	}
 	
 	private static void removeSubsets(List<CliqueTreeNode> cliqueTreeNodes) {
-		for(int i=0;i<cliqueTreeNodes.size();i++) {
-			for(int j=i+1;j<cliqueTreeNodes.size();j++) {
-				CliqueTreeNode cliqueTreeNode1 = cliqueTreeNodes.get(i);
-				CliqueTreeNode cliqueTreeNode2 = cliqueTreeNodes.get(j);
+		List<CliqueTreeNode> nodesToRemove = new ArrayList<CliqueTreeNode>();
+		for(CliqueTreeNode cliqueTreeNode1 : cliqueTreeNodes) {
+			for(CliqueTreeNode cliqueTreeNode2 : cliqueTreeNodes) {
+				if(cliqueTreeNode1 == cliqueTreeNode2) continue;
 
 				Set<InGraphNode> belongingNodes1 = cliqueTreeNode1.belongingNodes;
 				Set<InGraphNode> belongingNodes2 = cliqueTreeNode2.belongingNodes;
@@ -678,16 +698,18 @@ public class CliqueTreeHelper {
 				intersection.retainAll(belongingNodes2);
 				
 				if(intersection.size()==belongingNodes1.size()){
-					cliqueTreeNodes.remove(cliqueTreeNode1);
+					nodesToRemove.add(cliqueTreeNode1);
 					continue;
 				}
 				
 				if(intersection.size()==belongingNodes2.size()){
-					cliqueTreeNodes.remove(cliqueTreeNode2);
+					nodesToRemove.add(cliqueTreeNode2);
 					continue;
 				}
 			}
 		}
+		
+		cliqueTreeNodes.removeAll(nodesToRemove);
 	}
 	
 	private static List<CliqueTreeNode> getCliqueTreeNodes(InGraph inGraph, WordNumType wordNumType) {

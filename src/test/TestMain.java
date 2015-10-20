@@ -8,10 +8,12 @@ import helper.IO;
 import java.io.IOException;
 import java.util.List;
 
+import worker.CliqueTreeHelper;
+import worker.InGraphHelper;
+import worker.ModelAccuracy;
+import constants.AccuracyType;
 import constants.ModelType;
-import domain.CliqueTreeHelper;
 import domain.InGraph;
-import domain.InGraphHelper;
 import domain.Pair_data;
 
 /**
@@ -20,8 +22,9 @@ import domain.Pair_data;
  */
 
 
-//TODO: vaishali said ki can we use 'set' as adjancencies in inGraph to have search time as O(1)
+//TODO: vaishali said ki can we use 'set' as adjacencies in inGraph to have search time as O(1)
 //TODO: if no pair-skip factors, graph disconnected
+
 public class TestMain {
 
 	/**
@@ -33,14 +36,13 @@ public class TestMain {
 		readPotentials();
 		
 		String dataTreePath = "OCRdataset-2/data/data-loopsWS.dat";
-		List<Pair_data> dataPairs = IO.readDataTree(dataTreePath);
+		String truthTreePath = "OCRdataset-2/data/truth-loopsWS.dat";
+
+		//List<Pair_data> dataPairs = IO.readDataPairs(dataTreePath);
+		//List<InGraph> inGraphs = InGraphHelper.makeInGraph(dataPairs, ModelType.PAIR_SKIP_MODEL);
+		//CliqueTreeHelper.cliqueTree_msgPassing_calcBelief(inGraphs.get(5), ModelType.PAIR_SKIP_MODEL);
 		
-		List<InGraph> inGraphs = InGraphHelper.makeInGraph(dataPairs, ModelType.PAIR_SKIP_MODEL);
-		//InGraphNode minFillNode = CliqueTreeHelper.getMinFillNode(inGraphs.get(0));
-		
-		CliqueTreeHelper.cliqueTree_msgPassing_calcBelief(inGraphs.get(1), ModelType.PAIR_SKIP_MODEL);
-		
-		System.out.println("..........here............");
+		System.out.println(ModelAccuracy.getModelAccuracy(dataTreePath, truthTreePath, ModelType.SKIP_MODEL, AccuracyType.AVERAGE_DATASET_LOGLIKELIHOOD));
 		
 		//String[] imageID_arr = { "3", "3" };
 		//printProbabilities("aa", imageID_arr);
@@ -138,13 +140,13 @@ public class TestMain {
 		helper.IO.readPotentials(ocrPotentialsPath, transPotentialsPath);
 	}
 	
-	private static void readTree() throws IOException {
+	/*private static void readTree() throws IOException {
 		String dataTreePath = "OCRdataset-2/data/data-tree.dat";
 		String truthTreePath = "OCRdataset-2/data/truth-tree.dat";
 
 		IO.readDataTree(dataTreePath);
 		IO.readTruthTree(truthTreePath);
-	}
+	}*/
 
 	/*private static void printProbabilities(String word, String[] imageID_arr) {
 		List<String> imageIDs = Arrays.asList(imageID_arr);

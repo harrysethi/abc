@@ -54,7 +54,7 @@ public class IO {
 		br.close();
 	}
 
-	public static List<Pair_truth> readTruthTree(String filePath) throws IOException {
+	public static List<Pair_truth> readTruthPairs(String filePath) throws IOException {
 		BufferedReader br = new BufferedReader(new FileReader(filePath));
 
 		String line = br.readLine();
@@ -77,7 +77,7 @@ public class IO {
 		return truthPairs;
 	}
 
-	public static List<Pair_data> readDataTree(String filePath) throws IOException {
+	public static List<Pair_data> readDataPairs(String filePath) throws IOException {
 		BufferedReader br = new BufferedReader(new FileReader(filePath));
 
 		String line = br.readLine();

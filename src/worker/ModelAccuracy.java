@@ -8,11 +8,15 @@ import helper.IO;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import constants.AccuracyType;
-import constants.Consts;
 import constants.ModelType;
-import domain.BestProbableWord;
+import domain.CliqueTree;
+import domain.InGraph;
+import domain.InGraphNode;
+import domain.Pair_data;
+import domain.Pair_truth;
 
 /**
  * @author harinder
@@ -20,19 +24,140 @@ import domain.BestProbableWord;
  */
 public class ModelAccuracy {
 	
-	public static double getModelAccuracy(String imagesPath, String wordsPath, ModelType modelType, AccuracyType accuracyType) throws IOException {
-		List<List<String>> images = IO.readImagesDat(imagesPath);
-		List<String> goldWords = IO.readWordsDat(wordsPath);
+	public static double getModelAccuracy(String dataTreePath, String truthTreePath, ModelType modelType, AccuracyType accuracyType) 
+			throws IOException {
+		List<Pair_data> dataPairs = IO.readDataPairs(dataTreePath);
+		List<Pair_truth> truthPairs = IO.readTruthPairs(truthTreePath);
 		
-		if(accuracyType==AccuracyType.AVERAGE_DATASET_LOGLIKELIHOOD){
-			return getAverageDatasetLoglikelihood(images, goldWords, modelType);
+		List<InGraph> inGraphs = InGraphHelper.makeInGraph(dataPairs, modelType);
+		Map<InGraph, List<CliqueTree>> cliqueTreesMap = CliqueTreeHelper.makeCliqueTrees(inGraphs, modelType);
+		
+		List<Pair_truth> mostProbablePairs = new ArrayList<Pair_truth>();
+		
+		double loglikelihood = 0.0; //used for AVERAGE_DATASET_LOGLIKELIHOOD
+		
+		long startTime = System.nanoTime();
+
+		for(int i=0;i<dataPairs.size();i++) {
+			InGraph inGraph = inGraphs.get(i);
+			
+			
+			List<CliqueTree> cliqueTrees = cliqueTreesMap.get(inGraph);
+			Map<InGraphNode, Map<Object, List<Object>>> beliefs = CliqueTreeHelper.msgPassing_calcBelief(inGraph, modelType, cliqueTrees);
+			
+			if(accuracyType == AccuracyType.AVERAGE_DATASET_LOGLIKELIHOOD) {
+				Pair_truth pair_truth = truthPairs.get(i);
+				
+				loglikelihood += getWordProb_log(pair_truth.first, inGraph.nodes_w1, beliefs);
+				loglikelihood += getWordProb_log(pair_truth.second, inGraph.nodes_w2, beliefs);
+			}
+			
+			else {
+				Pair_truth mostProbablePair = getMostProbablePair(beliefs, inGraph);
+				mostProbablePairs.add(mostProbablePair);
+			}
 		}
 		
-		List<String> mostProbableWords = getMostProbableWords(images, modelType);
-		return getProbableWordsAccuracy(goldWords, mostProbableWords, accuracyType);
+		
+		
+		if(accuracyType == AccuracyType.AVERAGE_DATASET_LOGLIKELIHOOD) {
+			loglikelihood /= (dataPairs.size()*2);
+			return loglikelihood;
+		}
+		
+		else {
+			List<String> goldWords = truthPairs2Words(truthPairs);
+			List<String> mostProbableWords = truthPairs2Words(mostProbablePairs);
+		
+			double modelAccuracy = getProbableWordsAccuracy(goldWords, mostProbableWords, accuracyType);
+		
+			long endTime = System.nanoTime();
+			System.out.println("Time taken:- " + (endTime-startTime) + "ns");
+		
+			return modelAccuracy;
+		}
 	}
 	
-	private static double getProbableWordsAccuracy(List<String> goldWords, List<String> probableWords, AccuracyType accuracyType) throws IOException {
+	private static double getWordProb_log(String word, InGraphNode[] inGraphNodes,
+			Map<InGraphNode, Map<Object, List<Object>>> beliefs) {
+		double wordProb = 1.0;
+
+		for(int i=0;i<inGraphNodes.length;i++) {
+				InGraphNode inGraphNode = inGraphNodes[i];
+				char curr_char = word.charAt(i);
+				wordProb *= getCharacterProb(inGraphNode, curr_char, beliefs);
+			}
+		
+		return Math.log(wordProb);
+	}
+	
+	private static double getCharacterProb(InGraphNode inGraphNode, char req_char,
+			Map<InGraphNode, Map<Object, List<Object>>> beliefs) {
+
+		Map<Object, List<Object>> factorProduct = beliefs.get(inGraphNode);
+		List<Object> characterList = factorProduct.get(inGraphNode);
+		List<Object> valueList = factorProduct.get("Value");
+		
+		for(int i=0;i<characterList.size();i++) {
+			char curr_char = (char)characterList.get(i);
+			if(req_char == curr_char) 
+				return (double)valueList.get(i);
+		}
+		
+		return 0.0;
+	}
+	
+	private static Pair_truth getMostProbablePair(Map<InGraphNode, Map<Object, List<Object>>> beliefs, InGraph inGraph) {
+		Pair_truth pair_truth = new Pair_truth();
+		
+		pair_truth.first = getMostProbableWord(beliefs, inGraph.nodes_w1);
+		pair_truth.second = getMostProbableWord(beliefs, inGraph.nodes_w2);
+		
+		return pair_truth;
+	}
+
+	private static String getMostProbableWord(
+			Map<InGraphNode, Map<Object, List<Object>>> beliefs, InGraphNode[] inGraphNodes) {
+		StringBuilder word = new StringBuilder("");
+		for (InGraphNode inGraphNode : inGraphNodes) {
+			word.append(getMostProbableCharacter(inGraphNode, beliefs));
+		}
+		return word.toString();
+	}
+	
+	private static char getMostProbableCharacter(InGraphNode inGraphNode, Map<InGraphNode, Map<Object, List<Object>>> beliefs) {
+		Map<Object, List<Object>> factorProduct = beliefs.get(inGraphNode);
+		
+		List<Object> characterList = factorProduct.get(inGraphNode);
+		List<Object> valueList = factorProduct.get("Value");
+		
+		double maxProb = (double)valueList.get(0);
+		char bestChar = (char)characterList.get(0);
+		
+		for(int i=1;i<characterList.size();i++) {
+			double prob = (double)valueList.get(i);
+			if(maxProb < prob) {
+				maxProb = prob;
+				bestChar = (char)characterList.get(i);
+			}
+		}
+		
+		return bestChar;
+	}
+	
+	private static List<String> truthPairs2Words(List<Pair_truth> truthPairs) {
+		List<String> goldWords = new ArrayList<String>();
+		
+		for (Pair_truth Pair_truth : truthPairs) {
+			goldWords.add(Pair_truth.first);
+			goldWords.add(Pair_truth.second);
+		}
+		
+		return goldWords;
+ 	}
+	
+	private static double getProbableWordsAccuracy(List<String> goldWords, List<String> probableWords, AccuracyType accuracyType) 
+			throws IOException {
 		double accuracy = 0.0;
 		
 		switch(accuracyType){
@@ -49,18 +174,7 @@ public class ModelAccuracy {
 		
 		return accuracy;
 	}
-	
-	private static double getAverageDatasetLoglikelihood(List<List<String>> images, List<String> goldWords, ModelType modelType) {
-		double loglikelihood = 0.0;
 
-		int count = images.size();
-		for(int i=0;i<count;i++)
-			loglikelihood += Math.log(ProbCalc.CalculateWordProbability(goldWords.get(i), images.get(i), modelType));
-		
-		loglikelihood /= count;
-		return loglikelihood;
-	}
-	
 	private static double getCharacterWiseAccuracy(List<String> goldWords, List<String> probableWords) {
 		int similarCharsCount = 0;
 		int totalCharsCount = 0;
@@ -86,7 +200,7 @@ public class ModelAccuracy {
 		return accuracy;
 	}
 	
-	public static int getSimilarCharCount(String word1, String word2) {
+	private static int getSimilarCharCount(String word1, String word2) {
 		int count = 0;
 		
 		for(int i=0;i<word1.length();i++){
@@ -94,52 +208,5 @@ public class ModelAccuracy {
 		}
 		
 		return count;
-	}
-	
-	public static List<String> getMostProbableWords(String imagesPath, ModelType modelType) throws IOException {
-		List<List<String>> images = IO.readImagesDat(imagesPath);
-		return getMostProbableWords(images, modelType);
-	}
-	
-	private static List<String> getMostProbableWords(List<List<String>> images, ModelType modelType) {
-		List<String> mostProbWords = new ArrayList<String>();
-		
-		for(List<String> imageIDs : images){
-			int len = imageIDs.size();
-				
-			char[] wordArray = new char[len];
-			BestProbableWord bestProbableWord = new BestProbableWord();
-			
-			getMostProbableWord(modelType, len, 0, imageIDs, wordArray, bestProbableWord);
-			mostProbWords.add(bestProbableWord.wordString);
-		}
-		 
-		 return mostProbWords;
-	}
-	
-	private static String getMostProbableWord(List<String> imageIDs, ModelType modelType) {
-		int len = imageIDs.size();
-		
-		char[] wordArray = new char[len];
-		BestProbableWord bestProbableWord = new BestProbableWord();
-		
-		getMostProbableWord(modelType, len, 0, imageIDs, wordArray, bestProbableWord);
-		return bestProbableWord.wordString;
-	}
-	
-	
-	private static void getMostProbableWord(ModelType modelType, int len, int idx,
-			List<String> imageIDs, char[] wordArray, BestProbableWord bestProbWord) {
-		if (idx == len) {
-			String wordString = String.valueOf(wordArray);
-			double prob = ProbCalc.getWordProbabilityNumerator(wordString, imageIDs, modelType, len);
-			if(prob>bestProbWord.bestProb) {bestProbWord.wordString=wordString; bestProbWord.bestProb=prob;}
-			return;
-		}
- 
-		for (int i = 0; i < Consts.characters.length; i++) {
-			wordArray[idx] = Consts.characters[i];
-			getMostProbableWord(modelType, len, idx + 1, imageIDs, wordArray, bestProbWord);
-		}
 	}
 }

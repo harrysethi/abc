@@ -1,7 +1,7 @@
 /**
  * 
  */
-package domain;
+package worker;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,6 +9,10 @@ import java.util.List;
 import constants.FactorType;
 import constants.ModelType;
 import constants.WordNumType;
+import domain.InGraph;
+import domain.InGraphNode;
+import domain.InGraphNodeAdjacency;
+import domain.Pair_data;
 
 /**
  * @author harinder
