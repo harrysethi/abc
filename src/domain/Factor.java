@@ -16,6 +16,6 @@ public class Factor {
 	
 	@Override
 	public String toString() {
-		return this.factorType + "->" + inGraphNode1 + ":" + inGraphNode2;
+		return "{" + this.factorType + ":" + inGraphNode1 + ":" + inGraphNode2 + "}";
 	}
 }

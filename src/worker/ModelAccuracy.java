@@ -11,10 +11,12 @@ import java.util.List;
 import java.util.Map;
 
 import constants.AccuracyType;
+import constants.InferenceType;
 import constants.ModelType;
 import domain.CliqueTree;
 import domain.InGraph;
 import domain.InGraphNode;
+import domain.LB_graph;
 import domain.Pair_data;
 import domain.Pair_truth;
 
@@ -24,16 +26,51 @@ import domain.Pair_truth;
  */
 public class ModelAccuracy {
 	
-	public static double getModelAccuracy(String dataTreePath, String truthTreePath, ModelType modelType, AccuracyType accuracyType) 
-			throws IOException {
+	public static double getModelAccuracy(String dataTreePath, String truthTreePath, 
+			ModelType modelType, AccuracyType accuracyType, InferenceType inferenceType) throws IOException {
+		
 		List<Pair_data> dataPairs = IO.readDataPairs(dataTreePath);
 		List<Pair_truth> truthPairs = IO.readTruthPairs(truthTreePath);
 		
 		List<InGraph> inGraphs = InGraphHelper.makeInGraph(dataPairs, modelType);
+		
+		double modelAccuracy = 0.0;
+		
+		switch(inferenceType) {
+		case JUNCTION_TREE_MP:
+			modelAccuracy = getModelAccuracy_JunctionTreeMP(modelType, accuracyType, dataPairs, truthPairs, inGraphs);
+			break;
+		
+		case LB:
+			modelAccuracy = getModelAccuracy_LB(modelType, accuracyType, dataPairs, truthPairs, inGraphs);
+			break;
+		}
+		
+		return modelAccuracy;
+	}
+	
+	private static double getModelAccuracy_LB(ModelType modelType, AccuracyType accuracyType, 
+			List<Pair_data> dataPairs, List<Pair_truth> truthPairs, List<InGraph> inGraphs) throws IOException {
+		
+		Map<InGraph, LB_graph> lb_graph_map = LB_helper.create_LB_graphs(inGraphs, modelType);
+		//TODO:
+		
+		List<Pair_truth> mostProbablePairs = new ArrayList<Pair_truth>();
+		double loglikelihood = 0.0; //used for AVERAGE_DATASET_LOGLIKELIHOOD
+		
+		long startTime = System.nanoTime();
+		
+		//TODO: 
+		
+		return finalizeModelAccuracy_logLikelihood(accuracyType, dataPairs, truthPairs, mostProbablePairs, loglikelihood, startTime);
+	}
+
+	private static double getModelAccuracy_JunctionTreeMP(ModelType modelType, AccuracyType accuracyType, 
+			List<Pair_data> dataPairs, List<Pair_truth> truthPairs, List<InGraph> inGraphs) throws IOException {
+		
 		Map<InGraph, List<CliqueTree>> cliqueTreesMap = CliqueTreeHelper.makeCliqueTrees(inGraphs, modelType);
 		
 		List<Pair_truth> mostProbablePairs = new ArrayList<Pair_truth>();
-		
 		double loglikelihood = 0.0; //used for AVERAGE_DATASET_LOGLIKELIHOOD
 		
 		long startTime = System.nanoTime();
@@ -58,7 +95,11 @@ public class ModelAccuracy {
 			}
 		}
 		
-		
+		return finalizeModelAccuracy_logLikelihood(accuracyType, dataPairs, truthPairs, mostProbablePairs, loglikelihood, startTime);
+	}
+
+	private static double finalizeModelAccuracy_logLikelihood(AccuracyType accuracyType, List<Pair_data> dataPairs,
+			List<Pair_truth> truthPairs, List<Pair_truth> mostProbablePairs, double loglikelihood, long startTime) throws IOException {
 		
 		if(accuracyType == AccuracyType.AVERAGE_DATASET_LOGLIKELIHOOD) {
 			loglikelihood /= (dataPairs.size()*2);
