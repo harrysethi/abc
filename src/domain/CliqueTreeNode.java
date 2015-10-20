@@ -65,5 +65,13 @@ public class CliqueTreeNode {
 		
 		return count;
 	}
+	
+	public CliqueTreeEdge getEdgeFromLeaf() {
+		//this assumes the node is a leaf...that is, it has only 1 present edge
+		for(CliqueTreeEdge cliqueTreeEdge : this.adjList) {
+			if(cliqueTreeEdge.isPresent && !cliqueTreeEdge.isBroken) return cliqueTreeEdge;
+		}
+		return null;
+	}
 
 }

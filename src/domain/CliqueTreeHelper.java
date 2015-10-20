@@ -103,6 +103,7 @@ public class CliqueTreeHelper {
 			CliqueTreeNode cliqueTreeNode = myQ.remove();
 			
 			for(CliqueTreeEdge cliqueTreeEdge : cliqueTreeNode.adjList) {
+				if(!cliqueTreeEdge.isPresent) continue;
 				if(cliqueTreeEdge.downwardMessage != null) continue;
 					
 				CliqueTreeNode adjacent = cliqueTreeEdge.getDest();
@@ -148,7 +149,7 @@ public class CliqueTreeHelper {
 		
 		while(root.getAdjacencyCount() != 0) {
 			CliqueTreeNode leaf = cliqueTree.getLeaf();
-			CliqueTreeEdge edgeFromLeaf = leaf.adjList.get(0); 
+			CliqueTreeEdge edgeFromLeaf = leaf.getEdgeFromLeaf();
 			edgeFromLeaf.isBroken = true;
 			
 			CliqueTreeNode adjacent = edgeFromLeaf.getDest();
@@ -202,7 +203,7 @@ public class CliqueTreeHelper {
 			Map<InGraphNode, Character> key1 = getFactorRowKey(nodes1, factorProduct1, i, nodes1);
 			
 			for(int j=0;j<Math.pow(10, node.belongingNodes.size());j++) {
-				Map<InGraphNode, Character> key2 = getFactorRowKey(node.belongingNodes, node.factorProduct, i, nodes1);
+				Map<InGraphNode, Character> key2 = getFactorRowKey(node.belongingNodes, node.factorProduct, j, nodes1);
 
 				operateTwoFactorsHelper(valueList1, valueList2, valueList_to ,opType, i, key1, j, key2);
 			}

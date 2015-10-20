@@ -38,7 +38,7 @@ public class TestMain {
 		List<InGraph> inGraphs = InGraphHelper.makeInGraph(dataPairs, ModelType.PAIR_SKIP_MODEL);
 		//InGraphNode minFillNode = CliqueTreeHelper.getMinFillNode(inGraphs.get(0));
 		
-		CliqueTreeHelper.makeCliqueTree(inGraphs.get(1), ModelType.PAIR_SKIP_MODEL);
+		CliqueTreeHelper.cliqueTree_msgPassing_calcBelief(inGraphs.get(1), ModelType.PAIR_SKIP_MODEL);
 		
 		System.out.println("..........here............");
 		
