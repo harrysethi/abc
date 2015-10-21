@@ -53,14 +53,20 @@ public class ModelAccuracy {
 			List<Pair_data> dataPairs, List<Pair_truth> truthPairs, List<InGraph> inGraphs) throws IOException {
 		
 		Map<InGraph, LB_graph> lb_graph_map = LB_helper.create_LB_graphs(inGraphs, modelType);
-		//TODO:
 		
 		List<Pair_truth> mostProbablePairs = new ArrayList<Pair_truth>();
 		double loglikelihood = 0.0; //used for AVERAGE_DATASET_LOGLIKELIHOOD
 		
 		long startTime = System.nanoTime();
 		
-		//TODO: 
+		for(int i=0;i<dataPairs.size();i++) {
+			InGraph inGraph = inGraphs.get(i);
+			
+			LB_graph lb_graph = lb_graph_map.get(inGraph);
+			Map<InGraphNode, Map<Object, List<Object>>> beliefs = LB_helper.runAlgo_calculateBelief(inGraph, lb_graph, modelType);
+			
+			loglikelihood = getModelAccuracy_helper(accuracyType, truthPairs, mostProbablePairs, loglikelihood, i, inGraph, beliefs);
+		}
 		
 		return finalizeModelAccuracy_logLikelihood(accuracyType, dataPairs, truthPairs, mostProbablePairs, loglikelihood, startTime);
 	}
@@ -78,24 +84,30 @@ public class ModelAccuracy {
 		for(int i=0;i<dataPairs.size();i++) {
 			InGraph inGraph = inGraphs.get(i);
 			
-			
 			List<CliqueTree> cliqueTrees = cliqueTreesMap.get(inGraph);
 			Map<InGraphNode, Map<Object, List<Object>>> beliefs = CliqueTreeHelper.msgPassing_calcBelief(inGraph, modelType, cliqueTrees);
 			
-			if(accuracyType == AccuracyType.AVERAGE_DATASET_LOGLIKELIHOOD) {
-				Pair_truth pair_truth = truthPairs.get(i);
-				
-				loglikelihood += getWordProb_log(pair_truth.first, inGraph.nodes_w1, beliefs);
-				loglikelihood += getWordProb_log(pair_truth.second, inGraph.nodes_w2, beliefs);
-			}
-			
-			else {
-				Pair_truth mostProbablePair = getMostProbablePair(beliefs, inGraph);
-				mostProbablePairs.add(mostProbablePair);
-			}
+			loglikelihood = getModelAccuracy_helper(accuracyType, truthPairs, mostProbablePairs, loglikelihood, i, inGraph, beliefs);
 		}
 		
 		return finalizeModelAccuracy_logLikelihood(accuracyType, dataPairs, truthPairs, mostProbablePairs, loglikelihood, startTime);
+	}
+
+	private static double getModelAccuracy_helper(AccuracyType accuracyType, List<Pair_truth> truthPairs, List<Pair_truth> mostProbablePairs, 
+			double loglikelihood, int i, InGraph inGraph, Map<InGraphNode, Map<Object, List<Object>>> beliefs) {
+		if(accuracyType == AccuracyType.AVERAGE_DATASET_LOGLIKELIHOOD) {
+			Pair_truth pair_truth = truthPairs.get(i);
+			
+			loglikelihood += getWordProb_log(pair_truth.first, inGraph.nodes_w1, beliefs);
+			loglikelihood += getWordProb_log(pair_truth.second, inGraph.nodes_w2, beliefs);
+		}
+		
+		else {
+			Pair_truth mostProbablePair = getMostProbablePair(beliefs, inGraph);
+			mostProbablePairs.add(mostProbablePair);
+		}
+		
+		return loglikelihood;
 	}
 
 	private static double finalizeModelAccuracy_logLikelihood(AccuracyType accuracyType, List<Pair_data> dataPairs,

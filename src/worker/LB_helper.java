@@ -4,13 +4,17 @@
 package worker;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import constants.FactorType;
 import constants.ModelType;
+import constants.OperateType;
 import domain.InGraph;
 import domain.InGraphNode;
+import domain.LB_edge;
 import domain.LB_factorNode;
 import domain.LB_graph;
 import domain.LB_variableNode;
@@ -29,8 +33,102 @@ public class LB_helper {
 			lb_graph_map.put(inGraph, lb_Graph);
 		}
 		
-		
 		return lb_graph_map;
+	}
+	
+	public static Map<InGraphNode, Map<Object, List<Object>>> runAlgo_calculateBelief(InGraph inGraph, 
+			LB_graph lb_graph, ModelType modelType) {
+		Map<InGraphNode, Map<Object, List<Object>>> beliefMap = new HashMap<InGraphNode, Map<Object, List<Object>>>();
+		
+		while(!isConvergence()) {
+			//update edge_variable->factor
+			updateEdge_variableFactor(lb_graph, false);
+			
+			//update edge_factor->variable
+			updateEdge_factorVariable(lb_graph);
+			
+			//calculateBeliefs
+			updateEdge_variableFactor(lb_graph, true);
+		}
+		
+		return beliefMap;
+	}
+
+	private static void updateEdge_factorVariable(LB_graph lb_graph) {
+		for(LB_factorNode factorNode : lb_graph.factorNodes) {
+			for(LB_edge edge : factorNode.edges) {
+				Map<Object, List<Object>> factorProduct = new HashMap<Object, List<Object>>();
+				FactorHelper.createFactorProduct(factorProduct, factorNode.getBelongingNodes(), 1.0);
+				
+				Set<InGraphNode> inGraphNodes = new HashSet<InGraphNode>();
+				inGraphNodes.add(((LB_variableNode)edge.dest).inGraphNode);
+				
+				List<Object> valueList = factorProduct.get("Value");
+				for(LB_edge nbr : factorNode.edges) {
+					if(nbr.dest == edge.dest) continue;
+					
+					LB_edge backEdge = nbr.dest.getSpecificEdge(factorNode);
+					
+					Set<InGraphNode> tempNodes = new HashSet<InGraphNode>();
+					tempNodes.add(((LB_variableNode)nbr.dest).inGraphNode);
+					
+					FactorHelper.operateTwoFactors(tempNodes, factorNode.getBelongingNodes(), 
+							backEdge.msg, factorProduct, valueList, OperateType.OPERATE_MULTIPLY);
+				}
+				
+				//multiplying the potential at factorNode
+				FactorHelper.operateTwoFactors(factorNode.getBelongingNodes(), factorNode.getBelongingNodes(), 
+						factorNode.potentials, factorProduct, valueList, OperateType.OPERATE_MULTIPLY);
+				
+				Set<InGraphNode> nodesAfterSummingOut = new HashSet<InGraphNode>();
+				nodesAfterSummingOut.add(((LB_variableNode)edge.dest).inGraphNode);
+				Map<Object, List<Object>> factorProduct_summedOut = new HashMap<Object, List<Object>>();
+				FactorHelper.createFactorProduct(factorProduct_summedOut, nodesAfterSummingOut, 0.0);
+				
+				List<Object> valueList_summedOut = factorProduct_summedOut.get("Value");
+				
+				FactorHelper.operateTwoFactors(nodesAfterSummingOut, factorNode.getBelongingNodes(), factorProduct_summedOut, 
+						factorProduct, valueList_summedOut, OperateType.OPERATE_SUM);
+				
+				//normalize
+				FactorHelper.normalizeFactorProduct(factorProduct_summedOut);
+				
+				edge.msg = factorProduct_summedOut;
+			}
+		}
+	}
+
+	private static void updateEdge_variableFactor(LB_graph lb_graph, boolean isCalculatingBelief) {
+		for(LB_variableNode variableNode : lb_graph.variableNodes) {
+			for(LB_edge edge : variableNode.edges) {
+				Map<Object, List<Object>> factorProduct = new HashMap<Object, List<Object>>();
+				FactorHelper.createFactorProduct(factorProduct, variableNode.inGraphNode, 1.0);
+				
+				List<Object> valueList = factorProduct.get("Value");
+				for(LB_edge nbr : variableNode.edges) {
+					
+					if(!isCalculatingBelief && nbr.dest == edge.dest) continue;
+					
+					LB_edge backEdge = nbr.dest.getSpecificEdge(variableNode);
+					
+					Set<InGraphNode> inGraphNodes = new HashSet<InGraphNode>();
+					inGraphNodes.add(variableNode.inGraphNode);
+					
+					FactorHelper.operateTwoFactors(inGraphNodes, inGraphNodes, factorProduct, backEdge.msg, valueList, OperateType.OPERATE_MULTIPLY);
+				}
+				
+				//normalize
+				FactorHelper.normalizeFactorProduct(factorProduct);
+				
+				if(!isCalculatingBelief) edge.msg = factorProduct;
+				if(isCalculatingBelief) {variableNode.potentials = factorProduct; return; } 
+			}
+		}
+	}
+	
+	private static boolean isConvergence() {
+		//TODO: 
+		return false;
 	}
 	
 	private static LB_graph make_LB_graph(InGraph inGraph, ModelType modelType) {

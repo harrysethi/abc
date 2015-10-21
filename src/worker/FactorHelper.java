@@ -12,14 +12,83 @@ import java.util.Set;
 
 import constants.Consts;
 import constants.OperateType;
-import domain.CliqueTreeNode;
+import domain.Factor;
 import domain.InGraphNode;
+import domain.Potentials;
 
 /**
  * @author harinder
  *
  */
 public class FactorHelper {
+	
+	public static void setValueBasedOnFactor(List<Object> valueList, Factor factor, List<Object> factorList_specific2Node_1,
+			List<Object> factorList_specific2Node_2) {
+		switch (factor.factorType) {
+		case OCR:
+			for(int i=0; i<factorList_specific2Node_1.size(); i++) {
+				char currChar_ocr = (char)factorList_specific2Node_1.get(i);
+				Double prob_ocr = Potentials.getOcrFactor(factor.inGraphNode1.imgID, currChar_ocr);
+				
+				double currProb_ocr = (double)valueList.get(i);
+				valueList.set(i, currProb_ocr*prob_ocr);
+			}
+			
+			break;
+			
+		case TRANSITION:
+			for(int i=0; i<factorList_specific2Node_1.size(); i++) {
+				char currChar_transition_1 = (char)factorList_specific2Node_1.get(i);
+				char currChar_transition_2 = (char)factorList_specific2Node_2.get(i);
+				
+				Double prob_transition = Potentials.getTransFactor(currChar_transition_1, currChar_transition_2);
+				
+				double currProb_transition = (double)valueList.get(i);
+				valueList.set(i, currProb_transition*prob_transition);
+			}
+			
+			break;
+			
+		case SKIP:
+			for(int i=0; i<factorList_specific2Node_1.size(); i++) {
+				char currChar_transition_1 = (char)factorList_specific2Node_1.get(i);
+				char currChar_transition_2 = (char)factorList_specific2Node_2.get(i);
+				
+				Double prob_skip = Potentials.getSkipFactor(currChar_transition_1, currChar_transition_2);
+				
+				double currProb_skip = (double)valueList.get(i);
+				valueList.set(i, currProb_skip*prob_skip);
+			}
+			
+			break;
+
+		case PAIR_SKIP:
+			for(int i=0; i<factorList_specific2Node_1.size(); i++) {
+				char currChar_transition_1 = (char)factorList_specific2Node_1.get(i);
+				char currChar_transition_2 = (char)factorList_specific2Node_2.get(i);
+				
+				Double prob_pairSkip = Potentials.getPairSkipFactor(currChar_transition_1, currChar_transition_2);
+				
+				double currProb_pairSkip = (double)valueList.get(i);
+				valueList.set(i, currProb_pairSkip*prob_pairSkip);
+			}
+			
+			break;
+		}
+	}
+	
+	public static void normalizeFactorProduct(Map<Object, List<Object>> factorProduct) {
+		double sum = 0.0;
+		
+		List<Object> valueList = factorProduct.get("Value");
+		for (Object value : valueList) {
+			sum += (double)value;
+		}
+		
+		for (int i=0;i<valueList.size();i++) {
+			valueList.set(i, ((double)valueList.get(i))/sum);
+		}
+	}
 	
 	public static void createFactorProduct(Map<Object, List<Object>> factorProduct, 
 			InGraphNode inGraphNode, double defaultProb) {
@@ -86,15 +155,18 @@ public class FactorHelper {
 		addCharactersHelper(factorProduct, belongingNodes, ++l_index, --r_index, defaultProb);
 	}
 	
-	public static void operateTwoFactors(CliqueTreeNode node, Set<InGraphNode> nodes1,
-			Map<Object, List<Object>> factorProduct1, List<Object> valueList1, List<Object> valueList2, 
+	public static void operateTwoFactors(Set<InGraphNode> nodes1, Set<InGraphNode> nodes2,
+			Map<Object, List<Object>> factorProduct1, Map<Object, List<Object>> factorProduct2 , 
 			List<Object> valueList_to, OperateType opType) {
+		
+		List<Object> valueList1 = factorProduct1.get("Value");
+		List<Object> valueList2 = factorProduct2.get("Value");
 		
 		for(int i=0;i<Math.pow(10, nodes1.size());i++) {
 			Map<InGraphNode, Character> key1 = getFactorRowKey(nodes1, factorProduct1, i, nodes1);
 			
-			for(int j=0;j<Math.pow(10, node.belongingNodes.size());j++) {
-				Map<InGraphNode, Character> key2 = getFactorRowKey(node.belongingNodes, node.factorProduct, j, nodes1);
+			for(int j=0;j<Math.pow(10, nodes2.size());j++) {
+				Map<InGraphNode, Character> key2 = getFactorRowKey(nodes2, factorProduct2, j, nodes1);
 
 				operateTwoFactorsHelper(valueList1, valueList2, valueList_to ,opType, i, key1, j, key2);
 			}

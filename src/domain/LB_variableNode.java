@@ -4,8 +4,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import worker.FactorHelper;
-
 public class LB_variableNode extends LB_baseNode {
 	public InGraphNode inGraphNode;
 	
@@ -15,7 +13,7 @@ public class LB_variableNode extends LB_baseNode {
 		this.inGraphNode = inGraphNode;
 		
 		this.potentials = new HashMap<Object, List<Object>>();
-		FactorHelper.createFactorProduct(potentials, inGraphNode, 1.0);;
+		//FactorHelper.createFactorProduct(potentials, inGraphNode, 1.0);;
 	}
 	
 	@Override

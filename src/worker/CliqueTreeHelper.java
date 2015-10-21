@@ -81,11 +81,10 @@ public class CliqueTreeHelper {
 			Map<Object, List<Object>> factorProduct_summedOut = new HashMap<Object, List<Object>>();
 			FactorHelper.createFactorProduct(factorProduct_summedOut, nodesAfterSummingOut, 0.0);
 			
-			List<Object> valueList_node = cliqueTreeNode.factorProduct.get("Value");
 			List<Object> valueList_summedOut = factorProduct_summedOut.get("Value");
 			
-			FactorHelper.operateTwoFactors(cliqueTreeNode, nodesAfterSummingOut, factorProduct_summedOut, valueList_summedOut,
-					valueList_node, valueList_summedOut, OperateType.OPERATE_SUM);
+			FactorHelper.operateTwoFactors(nodesAfterSummingOut, cliqueTreeNode.belongingNodes, factorProduct_summedOut, 
+					cliqueTreeNode.factorProduct, valueList_summedOut, OperateType.OPERATE_SUM);
 			
 			beliefMap.put(inGraphNode, factorProduct_summedOut);
 			break;
@@ -129,12 +128,11 @@ public class CliqueTreeHelper {
 				Message upMsg = cliqueTreeEdge.upwardMessage;
 				
 				Map<Object, List<Object>> factorProduct_node_temp = new HashMap<Object, List<Object>>(cliqueTreeNode.factorProduct);
-				List<Object> valueList_upMsg = upMsg.factorProduct.get("Value");
 				List<Object> valueList_node_temp = factorProduct_node_temp.get("Value");
 				
 				//Divide the factorProduct by nodes upward message
-				FactorHelper.operateTwoFactors(cliqueTreeNode, upMsg.nodes, upMsg.factorProduct, valueList_upMsg,
-						valueList_node_temp, valueList_node_temp, OperateType.OPERATE_DIVIDE);
+				FactorHelper.operateTwoFactors(upMsg.nodes, cliqueTreeNode.belongingNodes, upMsg.factorProduct, 
+						cliqueTreeNode.factorProduct, valueList_node_temp, OperateType.OPERATE_DIVIDE);
 				
 				//sumOut
 				InGraphNode nodeToSumOut = getNodeToSumOut(cliqueTreeNode, adjacent);
@@ -148,12 +146,12 @@ public class CliqueTreeHelper {
 				List<Object> valueList_adjacent = adjacent.factorProduct.get("Value");
 
 				//populate factorTable of nodesAfterSummingOut
-				FactorHelper.operateTwoFactors(cliqueTreeNode, nodesAfterSummingOut, factorProduct_summedOut, valueList_summedOut,
-						valueList_node_temp, valueList_summedOut, OperateType.OPERATE_SUM);
+				FactorHelper.operateTwoFactors(nodesAfterSummingOut, cliqueTreeNode.belongingNodes, factorProduct_summedOut, 
+						cliqueTreeNode.factorProduct, valueList_summedOut, OperateType.OPERATE_SUM);
 
 				//multiply to adjacent
-				FactorHelper.operateTwoFactors(adjacent, nodesAfterSummingOut, factorProduct_summedOut, valueList_summedOut,
-						valueList_adjacent, valueList_adjacent, OperateType.OPERATE_MULTIPLY);
+				FactorHelper.operateTwoFactors(nodesAfterSummingOut, adjacent.belongingNodes, factorProduct_summedOut, 
+						adjacent.factorProduct, valueList_adjacent, OperateType.OPERATE_MULTIPLY);
 				
 				CliqueTreeEdge backEdge = adjacent.getCliqueTreeEdge(cliqueTreeNode);
 				backEdge.downwardMessage = new Message(factorProduct_summedOut, nodesAfterSummingOut);
@@ -183,17 +181,15 @@ public class CliqueTreeHelper {
 			FactorHelper.createFactorProduct(factorProduct_summedOut, nodesAfterSummingOut, 0.0);
 			
 			List<Object> valueList_adjacent = adjacent.factorProduct.get("Value");
-			List<Object> valueList_leaf = leaf.factorProduct.get("Value");
 			List<Object> valueList_summedOut = factorProduct_summedOut.get("Value");
 
 			//populate factorTable of nodesAfterSummingOut
-			FactorHelper.operateTwoFactors(leaf, nodesAfterSummingOut, factorProduct_summedOut, valueList_summedOut,
-					valueList_leaf, valueList_summedOut, OperateType.OPERATE_SUM);
-			
+			FactorHelper.operateTwoFactors(nodesAfterSummingOut, leaf.belongingNodes, factorProduct_summedOut, leaf.factorProduct,
+					valueList_summedOut, OperateType.OPERATE_SUM);
 			
 			//multiply summedOutFactorProduct with the adjacent node
-			FactorHelper.operateTwoFactors(adjacent, nodesAfterSummingOut, factorProduct_summedOut, valueList_summedOut,
-					valueList_adjacent, valueList_adjacent, OperateType.OPERATE_MULTIPLY);
+			FactorHelper.operateTwoFactors(nodesAfterSummingOut, adjacent.belongingNodes, factorProduct_summedOut, 
+					adjacent.factorProduct, valueList_adjacent, OperateType.OPERATE_MULTIPLY);
 			
 			//backEdge needs to be broken now :)
 			CliqueTreeEdge backEdge = adjacent.getCliqueTreeEdge(leaf);
@@ -221,70 +217,14 @@ public class CliqueTreeHelper {
 			List<Object> valueList = cliqueTreeNode.factorProduct.get("Value");
 
 			for(Factor factor : cliqueTreeNode.factors) {
-				List<Object> factorList_specific2Node_1 = searchSpecificFactorList(cliqueTreeNode, factor.inGraphNode1);
-				List<Object> factorList_specific2Node_2 = searchSpecificFactorList(cliqueTreeNode, factor.inGraphNode2);
+				List<Object> factorList_specific2Node_1 = cliqueTreeNode.factorProduct.get(factor.inGraphNode1);
+				List<Object> factorList_specific2Node_2 = cliqueTreeNode.factorProduct.get(factor.inGraphNode2);
 				
-				switch (factor.factorType) {
-				case OCR:
-					for(int i=0; i<factorList_specific2Node_1.size(); i++) {
-						char currChar_ocr = (char)factorList_specific2Node_1.get(i);
-						Double prob_ocr = Potentials.getOcrFactor(factor.inGraphNode1.imgID, currChar_ocr);
-						
-						double currProb_ocr = (double)valueList.get(i);
-						valueList.set(i, currProb_ocr*prob_ocr);
-					}
-					
-					break;
-					
-				case TRANSITION:
-					for(int i=0; i<factorList_specific2Node_1.size(); i++) {
-						char currChar_transition_1 = (char)factorList_specific2Node_1.get(i);
-						char currChar_transition_2 = (char)factorList_specific2Node_2.get(i);
-						
-						Double prob_transition = Potentials.getTransFactor(currChar_transition_1, currChar_transition_2);
-						
-						double currProb_transition = (double)valueList.get(i);
-						valueList.set(i, currProb_transition*prob_transition);
-					}
-					
-					break;
-					
-				case SKIP:
-					for(int i=0; i<factorList_specific2Node_1.size(); i++) {
-						char currChar_transition_1 = (char)factorList_specific2Node_1.get(i);
-						char currChar_transition_2 = (char)factorList_specific2Node_2.get(i);
-						
-						Double prob_skip = Potentials.getSkipFactor(currChar_transition_1, currChar_transition_2);
-						
-						double currProb_skip = (double)valueList.get(i);
-						valueList.set(i, currProb_skip*prob_skip);
-					}
-					
-					break;
-
-				case PAIR_SKIP:
-					for(int i=0; i<factorList_specific2Node_1.size(); i++) {
-						char currChar_transition_1 = (char)factorList_specific2Node_1.get(i);
-						char currChar_transition_2 = (char)factorList_specific2Node_2.get(i);
-						
-						Double prob_pairSkip = Potentials.getPairSkipFactor(currChar_transition_1, currChar_transition_2);
-						
-						double currProb_pairSkip = (double)valueList.get(i);
-						valueList.set(i, currProb_pairSkip*prob_pairSkip);
-					}
-					
-					break;
-				}
+				FactorHelper.setValueBasedOnFactor(valueList, factor, factorList_specific2Node_1, factorList_specific2Node_2);
 			}
-			
 		}
 	}
 
-	private static List<Object> searchSpecificFactorList(CliqueTreeNode cliqueTreeNode,
-			InGraphNode inGraphNode) {
-		return cliqueTreeNode.factorProduct.get(inGraphNode);
-	}
-	
 	private static void assignFactors(CliqueTree cliqueTree, ModelType modelType) {
 		switch (modelType) {
 		case PAIR_SKIP_MODEL:
@@ -326,7 +266,7 @@ public class CliqueTreeHelper {
 					if(!belongingNode1.imgID.equals(belongingNode2.imgID)) continue;
 					if(belongingNode1.wordNumType == belongingNode2.wordNumType) continue;
 					
-					//there exists a pair-skip factor
+					//there exists a pair_skip factor
 					String key1 = getKey(belongingNode1, belongingNode2);
 					String key2 = getKey(belongingNode2, belongingNode1);
 					if(pairSkipFactorsAssigned.contains(key1) || pairSkipFactorsAssigned.contains(key2)) continue;
